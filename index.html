@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sphere Fall in Viscous Fluid (Stokes regime)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #020617;
+            color: #f1f5f9;
+            min-height: 100vh;
+            padding: 2rem 1.25rem;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            color: #7dd3fc;
+            text-align: center;
+        }
+
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 1024px) {
+            .grid {
+                grid-template-columns: 1fr 400px;
+            }
+        }
+
+        .card {
+            background-color: #0f172a;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+        }
+
+        .simulation-card {
+            padding: 1rem;
+        }
+
+        .controls-card {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .info-text {
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+        }
+
+        .info-text b {
+            font-weight: 600;
+        }
+
+        .highlight {
+            color: #34d399;
+            margin-left: 0.25rem;
+        }
+
+        .validity-note {
+            font-size: 0.8rem;
+            color: #fbbf24;
+            background-color: rgba(251, 191, 36, 0.1);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border-left: 3px solid #fbbf24;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            border-radius: 0.75rem;
+            background-color: #1e293b;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-reset {
+            background-color: #334155;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background-color: #475569;
+        }
+
+        .btn-release {
+            background-color: #0284c7;
+            color: white;
+        }
+
+        .btn-release:hover {
+            background-color: #0ea5e9;
+        }
+
+        .btn-release:disabled {
+            background-color: #1e293b;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+        .time-display {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-left: auto;
+        }
+
+        .time-display p {
+            margin: 0;
+        }
+
+        .time-display .time-value {
+            font-weight: 600;
+        }
+
+        .time-value.yellow {
+            color: #fff000;
+        }
+
+        .time-value.red {
+            color: #fca5a5;
+        }
+
+        h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #7dd3fc;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            margin-bottom: 0.25rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #0284c7;
+        }
+
+        .control-value {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+
+        select {
+            width: 100%;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            color: #f1f5f9;
+            font-size: 0.875rem;
+        }
+
+        select:focus {
+            outline: 2px solid #0284c7;
+        }
+
+        .stats-section {
+            border-top: 1px solid #334155;
+            padding-top: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        h3.yellow {
+            color: #fff000;
+        }
+
+        h3.red {
+            color: #fca5a5;
+        }
+
+        .stats {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .stats p {
+            margin: 0;
+        }
+
+        .stats .valid {
+            color: #34d399;
+        }
+
+        .stats .invalid {
+            color: #f87171;
+        }
+
+        .sphere {
+            transition: cy 0.05s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            body {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sphere Fall in Viscous Fluid (Stokes regime)</h1>
+
+        <div class="grid">
+            <!-- SIMULATION VISUAL -->
+            <div class="card simulation-card">
+                <p class="info-text">
+                    Fluid: <b><span id="fluid-name">Honey</span></b>
+                    (ρ = <span id="fluid-rho">1400</span> kg/m³, μ ≈ <span id="fluid-mu">3.45</span> Pa·s) |
+                    Depth: <b>0–20 cm</b> |
+                    Ratio n = r₂/r₁ = <b><span id="n-ratio">1.325</span></b>
+                    <span id="n-highlight" class="highlight" style="display: none;">(range of interest)</span>
+                </p>
+
+                <p class="validity-note">
+                    ⚠️ Simulation valid for sphere Reynolds numbers less than 1
+                </p>
+
+                <svg id="simulation-svg" viewBox="0 0 680 540">
+                    <defs>
+                        <linearGradient id="fluidGrad" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stop-color="#38bdf8" />
+                            <stop offset="100%" stop-color="#0c4a6e" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Contenedor de fluido -->
+                    <rect id="fluid-container" x="60" y="30" width="560" height="470" fill="url(#fluidGrad)" rx="14" />
+
+                    <!-- Marcadores de profundidad -->
+                    <g id="depth-markers"></g>
+
+                    <!-- Ejes -->
+                    <line x1="80" y1="10" x2="80" y2="500" stroke="#bae6fd" stroke-width="1.5" />
+                    <line x1="60" y1="80" x2="620" y2="80" stroke="#bae6fd" stroke-width="1.5" />
+                    <text x="28" y="76" font-size="14" fill="#bae6fd">x = 0</text>
+
+                    <!-- Esferas -->
+                    <circle id="sphere1" class="sphere" cx="260" cy="80" r="4" fill="#FFF000" />
+                    <circle id="sphere2" class="sphere" cx="420" cy="80" r="13" fill="#f87171" />
+                </svg>
+
+                <div class="controls">
+                    <button class="btn-reset" onclick="resetSimulation()">
+                        Reset Position
+                    </button>
+                    <button class="btn-release" id="release-btn" onclick="releaseSimulation()">
+                        Release Spheres
+                    </button>
+                    <div class="time-display">
+                        <p>t₁: <span class="time-value blue" id="time1">0.000</span> s</p>
+                        <p>t₂: <span class="time-value red" id="time2">0.000</span> s</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTROL PANEL -->
+            <div class="card controls-card">
+                <h2>Controls</h2>
+
+                <div class="control-group">
+                    <label for="r1-input">Sphere 1 radius (mm)</label>
+                    <input type="range" id="r1-input" min="1" max="20" step="0.1" value="4">
+                    <p class="control-value" id="r1-value">4.000 mm</p>
+                </div>
+
+                <div class="control-group">
+                    <label for="r2-input">Sphere 2 radius (mm)</label>
+                    <input type="range" id="r2-input" min="1" max="20" step="0.1" value="13">
+                    <p class="control-value" id="r2-value">13.000 mm</p>
+                </div>
+
+                <div class="control-group">
+                    <label for="mat1-select">Sphere 1 material (yellow) kg/m³</label>
+                    <select id="mat1-select">
+                        <option value="Fe" selected>Iron (7874)</option>
+                        <option value="Steel">Steel (7810)</option>
+                        <option value="Stainless">Stainless Steel (8050)</option>
+                        <option value="Al">Aluminum (2698)</option>
+                        <option value="Cu">Copper (8960)</option>
+                        <option value="Glass">Glass (1500)</option>
+                        <option value="Plastic">Plastic (905)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="mat2-select">Sphere 2 material (red) kg/m³</label>
+                    <select id="mat2-select">
+                        <option value="Al" selected>Aluminum (2698)</option>
+                        <option value="Fe">Iron (7874)</option>
+                        <option value="Steel">Steel (7810)</option>
+                        <option value="Stainless">Stainless Steel (8050)</option>
+                        <option value="Cu">Copper (8960)</option>
+                        <option value="Glass">Glass (1500)</option>
+                        <option value="Plastic">Plastic (905)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="fluid-select">Fluid: density kg/m³ and viscosity Pa·s</label>
+                    <select id="fluid-select">
+                        <option value="Air">Air</option>
+                        <option value="Water">Water</option>
+                        <option value="Glycerin">Glycerin</option>
+                        <option value="SiliconeOil">Silicone Oil</option>
+                        <option value="CornSyrup">Corn Syrup</option>
+                        <option value="Honey" selected>Honey</option>
+                        <option value="Mercury">Mercury</option>
+                    </select>
+                </div>
+
+                <div class="stats-section">
+                    <h3 class="yellow">Sphere 1 (yellow)</h3>
+                    <div class="stats">
+                        <p>W = <span id="s1-w">0.000</span> N</p>
+                        <p>x(t) = <span id="s1-x">0.000</span> m</p>
+                        <p>v(t) = <span id="s1-v">0.000</span> m/s</p>
+                        <p>a(t) = <span id="s1-a">0.000</span> m/s²</p>
+                        <p id="s1-re-container">Re = <span id="s1-re">0.000</span></p>
+                    </div>
+                </div>
+
+                <div class="stats-section">
+                    <h3 class="red">Sphere 2 (red)</h3>
+                    <div class="stats">
+                        <p>W = <span id="s2-w">0.000</span> N</p>
+                        <p>x(t) = <span id="s2-x">0.000</span> m</p>
+                        <p>v(t) = <span id="s2-v">0.000</span> m/s</p>
+                        <p>a(t) = <span id="s2-a">0.000</span> m/s²</p>
+                        <p id="s2-re-container">Re = <span id="s2-re">0.000</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const g = 9.81;
+        const waterHeight = 420;
+        const fluidTopPadding = 50; // Extra fluid above x=0 line
+        const waterWidth = 680;
+        const surfaceY = 80;
+        const xMax_m = 0.2;
+
+        // Material densities (kg/m³)
+        const materials = {
+            Fe: 7874,
+            Steel: 7810,
+            Stainless: 8050,
+            Al: 2698,
+            Cu: 8960,
+            Glass: 1500,
+            Plastic: 905
+        };
+
+        // Fluids properties
+        const fluids = {
+            Air: { rho: 1.2, mu: 0.0000181, name: 'Air' },
+            Water: { rho: 1000, mu: 0.001, name: 'Water' },
+            Glycerin: { rho: 1260, mu: 1.5, name: 'Glycerin' },
+            SiliconeOil: { rho: 970, mu: 2.0, name: 'Silicone Oil' },
+            CornSyrup: { rho: 1380, mu: 3.0, name: 'Corn Syrup' },
+            Honey: { rho: 1400, mu: 3.45, name: 'Honey' },
+            Mercury: { rho: 13600, mu: 0.00155, name: 'Mercury' }
+        };
+
+        // State
+        let state = {
+            time1: 0,
+            time2: 0,
+            released: false,
+            r1: 0.004,
+            r2: 0.013,
+            mat1: 'Fe',
+            mat2: 'Al',
+            fluidKey: 'Honey',
+            intervalId: null,
+            sphere1Stopped: false,
+            sphere2Stopped: false
+        };
+
+        // Utility functions
+        function fmt(v, digits = 3) {
+            return Number.isFinite(v)
+                ? v.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits })
+                : '—';
+        }
+
+        function toY(x_m) {
+            return surfaceY + (Math.min(Math.max(x_m, 0), xMax_m) / xMax_m) * waterHeight;
+        }
+
+        function getYPosition(x_m, r) {
+            const centerY = toY(x_m);
+            const maxCenterY = surfaceY + waterHeight - r * 1000;
+            return Math.min(centerY, maxCenterY);
+        }
+
+        function sinks(rho_s) {
+            const fluid = fluids[state.fluidKey];
+            return rho_s > fluid.rho;
+        }
+
+        // Stokes calculation
+        function stokes(r, rho_s, t) {
+            const fluid = fluids[state.fluidKey];
+            const rho_f = fluid.rho;
+            const mu = fluid.mu;
+
+            const W = (4 / 3) * Math.PI * Math.pow(r, 3) * rho_s * g;
+
+            if (!sinks(rho_s)) {
+                return {
+                    vt: NaN, tau: NaN, v: NaN, a: NaN, x: NaN, W,
+                    Re: NaN, Re_inf: NaN, valid: false,
+                    reason: 'Sphere does not sink (ρ_sphere ≤ ρ_fluid).',
+                    hitBottom: false
+                };
+            }
+
+            const vt = (2 * Math.pow(r, 2) * g * (rho_s - rho_f)) / (9 * mu);
+            const tau = (2 * Math.pow(r, 2) * rho_s) / (9 * mu);
+            const v = vt * (1 - Math.exp(-t / tau));
+            const a = (vt / tau) * Math.exp(-t / tau);
+            const x_unclamped = vt * (t - tau * (1 - Math.exp(-t / tau)));
+
+            // Clamp position so sphere's bottom doesn't go past container bottom
+            const maxX = xMax_m - r;
+            const x = Math.min(x_unclamped, maxX);
+            const hitBottom = x_unclamped >= maxX;
+
+            const Re = (2 * r * v * rho_f) / mu;
+            const Re_inf = (2 * r * vt * rho_f) / mu;
+
+            return { vt, tau, v, a, x, W, Re, Re_inf, valid: true, reason: '', hitBottom };
+        }
+
+        // Initialize depth markers
+        function initDepthMarkers() {
+            const markersGroup = document.getElementById('depth-markers');
+            markersGroup.innerHTML = '';
+
+            for (let i = 0; i < 4; i++) {
+                const depth_m = ((i + 1) * xMax_m) / 4;
+                const y = toY(depth_m);
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', '74');
+                line.setAttribute('x2', '86');
+                line.setAttribute('y1', y);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#bae6fd');
+                line.setAttribute('stroke-width', '1');
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', '32');
+                text.setAttribute('y', y + 4);
+                text.setAttribute('font-size', '12');
+                text.setAttribute('fill', '#bae6fd');
+                text.textContent = fmt(depth_m * 100, 0) + ' cm';
+
+                markersGroup.appendChild(line);
+                markersGroup.appendChild(text);
+            }
+        }
+
+        // Update UI
+        function updateUI() {
+            const s1 = stokes(state.r1, materials[state.mat1], state.time1);
+            const s2 = stokes(state.r2, materials[state.mat2], state.time2);
+
+            // Update fluid info
+            const fluid = fluids[state.fluidKey];
+            document.getElementById('fluid-name').textContent = fluid.name;
+            document.getElementById('fluid-rho').textContent = fluid.rho;
+            document.getElementById('fluid-mu').textContent = fluid.mu;
+
+            // Update n ratio
+            const n = state.r1 > 0 ? state.r2 / state.r1 : 0;
+            document.getElementById('n-ratio').textContent = fmt(n);
+            const nInRange = n > 1.429 && n < 2.233;
+            document.getElementById('n-highlight').style.display = nInRange ? 'inline' : 'none';
+
+            // Update times
+            document.getElementById('time1').textContent = fmt(state.time1);
+            document.getElementById('time2').textContent = fmt(state.time2);
+
+            // Update sphere positions and sizes
+            const sphere1 = document.getElementById('sphere1');
+            const sphere2 = document.getElementById('sphere2');
+
+            sphere1.setAttribute('r', state.r1 * 1000);
+            sphere2.setAttribute('r', state.r2 * 1000);
+
+            if (state.released && s1.valid) {
+                sphere1.setAttribute('cy', getYPosition(s1.x, state.r1));
+            } else {
+                // Start position: at x=0 line
+                sphere1.setAttribute('cy', surfaceY);
+            }
+
+            if (state.released && s2.valid) {
+                sphere2.setAttribute('cy', getYPosition(s2.x, state.r2));
+            } else {
+                // Start position: at x=0 line
+                sphere2.setAttribute('cy', surfaceY);
+            }
+
+            // Update stats for sphere 1
+            document.getElementById('s1-w').textContent = Number.isFinite(s1.W) ? s1.W.toExponential(3) : '—';
+            document.getElementById('s1-x').textContent = fmt(s1.x);
+            document.getElementById('s1-v').textContent = fmt(s1.v);
+            document.getElementById('s1-a').textContent = fmt(s1.a);
+            document.getElementById('s1-re').textContent = fmt(s1.Re);
+            const s1ReContainer = document.getElementById('s1-re-container');
+            s1ReContainer.className = Number.isFinite(s1.Re) && s1.Re < 1 ? 'valid' : 'invalid';
+
+            // Update stats for sphere 2
+            document.getElementById('s2-w').textContent = Number.isFinite(s2.W) ? s2.W.toExponential(3) : '—';
+            document.getElementById('s2-x').textContent = fmt(s2.x);
+            document.getElementById('s2-v').textContent = fmt(s2.v);
+            document.getElementById('s2-a').textContent = fmt(s2.a);
+            document.getElementById('s2-re').textContent = fmt(s2.Re);
+            const s2ReContainer = document.getElementById('s2-re-container');
+            s2ReContainer.className = Number.isFinite(s2.Re) && s2.Re < 1 ? 'valid' : 'invalid';
+
+            // Update control values
+            document.getElementById('r1-value').textContent = fmt(state.r1 * 1000) + ' mm';
+            document.getElementById('r2-value').textContent = fmt(state.r2 * 1000) + ' mm';
+        }
+
+        // Event handlers
+        function resetSimulation() {
+            state.time1 = 0;
+            state.time2 = 0;
+            state.released = false;
+            state.sphere1Stopped = false;
+            state.sphere2Stopped = false;
+            if (state.intervalId) {
+                clearInterval(state.intervalId);
+                state.intervalId = null;
+            }
+            document.getElementById('release-btn').disabled = false;
+            updateUI();
+        }
+
+        function releaseSimulation() {
+            if (state.released) return;
+
+            state.released = true;
+            document.getElementById('release-btn').disabled = true;
+
+            state.intervalId = setInterval(() => {
+                // Calculate current state for both spheres
+                const s1 = stokes(state.r1, materials[state.mat1], state.time1);
+                const s2 = stokes(state.r2, materials[state.mat2], state.time2);
+
+                // Check if spheres hit bottom or don't sink
+                if (!s1.valid || (s1.valid && s1.hitBottom)) {
+                    state.sphere1Stopped = true;
+                }
+                if (!s2.valid || (s2.valid && s2.hitBottom)) {
+                    state.sphere2Stopped = true;
+                }
+
+                // Only increment time for spheres that haven't stopped
+                if (!state.sphere1Stopped) {
+                    state.time1 = state.time1 + 0.05;
+                }
+                if (!state.sphere2Stopped) {
+                    state.time2 = state.time2 + 0.05;
+                }
+
+                // If both spheres have stopped, stop the simulation
+                if (state.sphere1Stopped && state.sphere2Stopped) {
+                    clearInterval(state.intervalId);
+                    state.intervalId = null;
+                }
+
+                updateUI();
+            }, 50);
+        }
+
+        // Setup event listeners
+        document.getElementById('r1-input').addEventListener('input', (e) => {
+            if (state.released) {
+                resetSimulation();
+            }
+            state.r1 = parseFloat(e.target.value) / 1000;
+            updateUI();
+        });
+
+        document.getElementById('r2-input').addEventListener('input', (e) => {
+            if (state.released) {
+                resetSimulation();
+            }
+            state.r2 = parseFloat(e.target.value) / 1000;
+            updateUI();
+        });
+
+        document.getElementById('mat1-select').addEventListener('change', (e) => {
+            if (state.released) {
+                resetSimulation();
+            }
+            state.mat1 = e.target.value;
+            updateUI();
+        });
+
+        document.getElementById('mat2-select').addEventListener('change', (e) => {
+            if (state.released) {
+                resetSimulation();
+            }
+            state.mat2 = e.target.value;
+            updateUI();
+        });
+
+        document.getElementById('fluid-select').addEventListener('change', (e) => {
+            if (state.released) {
+                resetSimulation();
+            }
+            state.fluidKey = e.target.value;
+            updateUI();
+        });
+
+        // Initialize
+        initDepthMarkers();
+        updateUI();
+    </script>
+</body>
+</html>
