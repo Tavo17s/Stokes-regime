@@ -134,6 +134,21 @@
             cursor: not-allowed;
         }
 
+        .btn-pause {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        .btn-pause:hover {
+            background-color: #d97706;
+        }
+
+        .btn-pause:disabled {
+            background-color: #1e293b;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
         .time-display {
             font-size: 0.875rem;
             color: #94a3b8;
@@ -304,6 +319,9 @@
                     <button class="btn-release" id="release-btn" onclick="releaseSimulation()">
                         Release Spheres
                     </button>
+                    <button class="btn-pause" id="pause-btn" onclick="togglePause()" disabled>
+                        Pause
+                    </button>
                     <div class="time-display">
                         <p>t₁: <span class="time-value blue" id="time1">0.000</span> s</p>
                         <p>t₂: <span class="time-value red" id="time2">0.000</span> s</p>
@@ -425,6 +443,7 @@
             time1: 0,
             time2: 0,
             released: false,
+            paused: false,
             r1: 0.004,
             r2: 0.013,
             mat1: 'Fe',
@@ -566,7 +585,6 @@
             document.getElementById('s1-w').textContent = Number.isFinite(s1.W) ? s1.W.toExponential(3) : '—';
             document.getElementById('s1-x').textContent = fmt(s1.x);
             document.getElementById('s1-v').textContent = fmt(s1.v);
-            document.getElementById('s1-a').textContent = fmt(s1.a);
             document.getElementById('s1-re').textContent = fmt(s1.Re);
             const s1ReContainer = document.getElementById('s1-re-container');
             s1ReContainer.className = Number.isFinite(s1.Re) && s1.Re < 1 ? 'valid' : 'invalid';
@@ -575,7 +593,6 @@
             document.getElementById('s2-w').textContent = Number.isFinite(s2.W) ? s2.W.toExponential(3) : '—';
             document.getElementById('s2-x').textContent = fmt(s2.x);
             document.getElementById('s2-v').textContent = fmt(s2.v);
-            document.getElementById('s2-a').textContent = fmt(s2.a);
             document.getElementById('s2-re').textContent = fmt(s2.Re);
             const s2ReContainer = document.getElementById('s2-re-container');
             s2ReContainer.className = Number.isFinite(s2.Re) && s2.Re < 1 ? 'valid' : 'invalid';
@@ -590,6 +607,7 @@
             state.time1 = 0;
             state.time2 = 0;
             state.released = false;
+            state.paused = false;
             state.sphere1Stopped = false;
             state.sphere2Stopped = false;
             if (state.intervalId) {
@@ -597,6 +615,8 @@
                 state.intervalId = null;
             }
             document.getElementById('release-btn').disabled = false;
+            document.getElementById('pause-btn').disabled = true;
+            document.getElementById('pause-btn').textContent = 'Pause';
             updateUI();
         }
 
@@ -604,7 +624,10 @@
             if (state.released) return;
 
             state.released = true;
+            state.paused = false;
             document.getElementById('release-btn').disabled = true;
+            document.getElementById('pause-btn').disabled = false;
+            document.getElementById('pause-btn').textContent = 'Pause';
 
             state.intervalId = setInterval(() => {
                 // Calculate current state for both spheres
@@ -631,10 +654,60 @@
                 if (state.sphere1Stopped && state.sphere2Stopped) {
                     clearInterval(state.intervalId);
                     state.intervalId = null;
+                    document.getElementById('pause-btn').disabled = true;
                 }
 
                 updateUI();
             }, 50);
+        }
+
+        function togglePause() {
+            if (!state.released) return;
+
+            if (state.paused) {
+                // Resume simulation
+                state.paused = false;
+                document.getElementById('pause-btn').textContent = 'Pause';
+
+                state.intervalId = setInterval(() => {
+                    // Calculate current state for both spheres
+                    const s1 = stokes(state.r1, materials[state.mat1], state.time1);
+                    const s2 = stokes(state.r2, materials[state.mat2], state.time2);
+
+                    // Check if spheres hit bottom or don't sink
+                    if (!s1.valid || (s1.valid && s1.hitBottom)) {
+                        state.sphere1Stopped = true;
+                    }
+                    if (!s2.valid || (s2.valid && s2.hitBottom)) {
+                        state.sphere2Stopped = true;
+                    }
+
+                    // Only increment time for spheres that haven't stopped
+                    if (!state.sphere1Stopped) {
+                        state.time1 = state.time1 + 0.05;
+                    }
+                    if (!state.sphere2Stopped) {
+                        state.time2 = state.time2 + 0.05;
+                    }
+
+                    // If both spheres have stopped, stop the simulation
+                    if (state.sphere1Stopped && state.sphere2Stopped) {
+                        clearInterval(state.intervalId);
+                        state.intervalId = null;
+                        document.getElementById('pause-btn').disabled = true;
+                    }
+
+                    updateUI();
+                }, 50);
+            } else {
+                // Pause simulation
+                state.paused = true;
+                document.getElementById('pause-btn').textContent = 'Resume';
+                if (state.intervalId) {
+                    clearInterval(state.intervalId);
+                    state.intervalId = null;
+                }
+            }
         }
 
         // Setup event listeners
